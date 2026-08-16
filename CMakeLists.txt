@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 4.0)
 
 find_package(cmake-bare REQUIRED PATHS node_modules/cmake-bare)
-find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(libuv REQUIRED)
+find_path(LIBUV_INCLUDE_DIR NAMES uv.h)
+find_library(LIBUV_LIBRARY NAMES uv libuv)
 
 project(bare_addon C)
 
