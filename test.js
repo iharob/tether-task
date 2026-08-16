@@ -1,8 +1,7 @@
 const test = require('brittle')
 const { tcpCat } = require('.')
 
-const REQUEST =
-  'GET / HTTP/1.1\r\nHost: cloudflare.com\r\nConnection: close\r\n\r\n'
+const REQUEST = 'GET / HTTP/1.1\r\nHost: cloudflare.com\r\nConnection: close\r\n\r\n'
 
 test('throws ERROR_ARGUMENT_COUNT with no arguments', async (t) => {
   try {
@@ -119,10 +118,7 @@ test('resolves with a non-empty ArrayBuffer for HTTP GET to 1.1.1.1:80', async (
 })
 
 test('two concurrent calls both resolve independently', async (t) => {
-  const [a, b] = await Promise.all([
-    tcpCat('1.1.1.1', 80, REQUEST),
-    tcpCat('1.1.1.1', 80, REQUEST)
-  ])
+  const [a, b] = await Promise.all([tcpCat('1.1.1.1', 80, REQUEST), tcpCat('1.1.1.1', 80, REQUEST)])
   t.ok(a.byteLength > 0, 'first response has bytes')
   t.ok(b.byteLength > 0, 'second response has bytes')
 })
