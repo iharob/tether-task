@@ -21,26 +21,26 @@ on_resolve(tcp_cat_response *response, void *data) {
   env = tcp_cat_js_context_get_js_environment(context);
   err = js_open_handle_scope(env, &scope);
   if (err < 0) {
-    fprintf(stderr, "Failed to open handle scope, cannot continue\n");
+    fprintf(stderr, "FATAL INTERNAL ERROR: Failed to open handle scope\n");
     abort();
   }
 
   err = tcp_cat_response_to_js_arraybuffer(env, response, &resolution);
   if (err < 0) {
-    err = tcp_cat_js_create_error(env, ERROR_RESPONSE_TO_ARRAYBUFFER, "Failed to convert response to JS arraybuffer", &resolution);
+    err = tcp_cat_js_create_error(env, ERROR_RESPONSE_TO_ARRAYBUFFER, "Failed to convert response to ArrayBuffer", &resolution);
     if (err < 0) {
       fprintf(stderr, "FATAL INTERNAL ERROR: Failed to create error object\n");
       abort();
     }
     err = js_reject_deferred(env, tcp_cat_js_context_get_deferred(context), resolution);
     if (err < 0) {
-      fprintf(stderr, "FATAL INTERNAL ERROR: Failed to resolve deferred\n");
+      fprintf(stderr, "FATAL INTERNAL ERROR: Failed to reject deferred\n");
       abort();
     }
   } else {
     err = js_resolve_deferred(env, tcp_cat_js_context_get_deferred(context), resolution);
     if (err < 0) {
-      fprintf(stderr, "FATAL INTERNAL ERROR: Failed to create error object\n");
+      fprintf(stderr, "FATAL INTERNAL ERROR: Failed to resolve deferred\n");
       abort();
     }
   }
@@ -64,13 +64,13 @@ on_reject(const char *error_name, const char *error_message, void *data) {
   env = tcp_cat_js_context_get_js_environment(context);
   err = js_open_handle_scope(env, &scope);
   if (err < 0) {
-    fprintf(stderr, "FATAL INTERNAL ERROR: Failed to open handle scope, cannot continue\n");
+    fprintf(stderr, "FATAL INTERNAL ERROR: Failed to open handle scope\n");
     abort();
   }
 
   err = tcp_cat_js_create_error(env, error_name, error_message, &resolution);
   if (err < 0) {
-    fprintf(stderr, "FATAL INTERNAL ERROR: Failed to allocate the error object\n");
+    fprintf(stderr, "FATAL INTERNAL ERROR: Failed to create error object\n");
     // Even though at this point we have the scope ready,
     // if this happens we can barely continue anyway as the
     // reason is probably OOM. So we abort because there is
@@ -80,7 +80,7 @@ on_reject(const char *error_name, const char *error_message, void *data) {
 
   err = js_reject_deferred(env, tcp_cat_js_context_get_deferred(context), resolution);
   if (err < 0) {
-    fprintf(stderr, "FATAL INTERNAL ERROR: Failed to reject the promise\n");
+    fprintf(stderr, "FATAL INTERNAL ERROR: Failed to reject deferred\n");
     // This error is like the ones above, unrecoverable.
     abort();
   }
@@ -94,36 +94,36 @@ tcp_cat_js_create_arguments_parse_error(js_env_t *env, tcp_cat_parse_arguments_e
 
   switch (parse_error) {
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_WRONG_COUNT:
-    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_COUNT, "Wrong number of arguments passed to tcpCat, expected 3", error);
+    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_COUNT, "Expected 3 arguments (IP address, port, message)", error);
     break;
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_WRONG_ARGUMENT_TYPE_FIRST:
-    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_TYPE, "Wrong type of argument (1) passed to tcpCat, expected string", error);
+    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_TYPE, "First argument must be a string (IP address)", error);
     break;
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_WRONG_ARGUMENT_TYPE_SECOND:
-    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_TYPE, "Wrong type of argument (2) passed to tcpCat, expected number", error);
+    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_TYPE, "Second argument must be a number (port)", error);
     break;
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_WRONG_ARGUMENT_TYPE_THIRD:
-    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_TYPE, "Wrong type of argument (3) passed to tcpCat, expected string", error);
+    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_TYPE, "Third argument must be a string (message)", error);
     break;
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_PORT_OUT_OF_RANGE:
-    err = tcp_cat_js_create_error(env, ERROR_PORT_OUT_OF_RANGE, "Wrong value of argument (2) passed to tcpCat, expected a value between 1 and 65535", error);
+    err = tcp_cat_js_create_error(env, ERROR_PORT_OUT_OF_RANGE, "Port must be between 1 and 65535", error);
     break;
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_NO_MEMORY:
-    err = tcp_cat_js_create_error(env, ERROR_NO_MEMORY, "Could not allocate memory for tcpCat arguments", error);
+  case TCP_CAT_PARSE_ARGUMENTS_ERROR_OUT_OF_MEMORY:
+    err = tcp_cat_js_create_error(env, ERROR_NO_MEMORY, ERROR_MESSAGE_OUT_OF_MEMORY, error);
     break;
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_CANNOT_DETERMINE_TYPE:
-    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_TYPE, "Could not determine type of argument passed to tcpCat", error);
+    err = tcp_cat_js_create_error(env, ERROR_ARGUMENT_TYPE, "Failed to determine argument type", error);
     break;
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_OTHER:
-    err = tcp_cat_js_create_error(env, ERROR_UNKNOWN, "Unknown error parsing arguments for tcpCat", error);
+    err = tcp_cat_js_create_error(env, ERROR_UNKNOWN, "Failed to parse arguments", error);
     break;
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_WRONG_TYPE:
   case TCP_CAT_PARSE_ARGUMENTS_ERROR_UINT16_OUT_OF_RANGE:
   case TCP_CAT_PARSE_ARGUMENTS_SUCCESS:
-    err = tcp_cat_js_create_error(env, ERROR_UNKNOWN, "These errors would have been caught in a different place", error);
-    break;
-  case TCP_CAT_PARSE_ARGUMENTS_ERROR_OUT_OF_MEMORY:
-    err = tcp_cat_js_create_error(env, ERROR_NO_MEMORY, "No memory left on your system", error);
+    // Internal-only variants: these are remapped to argument-specific errors
+    // by tcp_cat_parse_arguments before reaching this switch.
+    err = tcp_cat_js_create_error(env, ERROR_UNKNOWN, ERROR_MESSAGE_UNKNOWN, error);
     break;
   }
 
@@ -139,7 +139,7 @@ tcp_cat_execute(js_env_t *env, js_callback_info_t *info, js_deferred_t *deferred
 
   err = js_get_env_loop(env, &loop);
   if (err < 0) {
-    err = tcp_cat_js_create_error(env, ERROR_UNKNOWN, "Could not get UV loop from js env", &error);
+    err = tcp_cat_js_create_error(env, ERROR_GETTING_UV_LOOP, "Failed to get UV loop from JS environment", &error);
     goto error;
   }
 
@@ -151,7 +151,7 @@ tcp_cat_execute(js_env_t *env, js_callback_info_t *info, js_deferred_t *deferred
 
   tcp_cat_js_context *const context = tcp_cat_js_context_new(env, deferred, arguments);
   if (context == NULL) {
-    err = tcp_cat_js_create_error(env, ERROR_NO_MEMORY, "Failed allocating memory for the async context", &error);
+    err = tcp_cat_js_create_error(env, ERROR_NO_MEMORY, ERROR_MESSAGE_OUT_OF_MEMORY, &error);
     goto error;
   }
   tcp_cat_execute_async(loop, arguments, on_resolve, on_reject, context);
@@ -164,7 +164,7 @@ error:
   if (error != NULL) {
     err = js_reject_deferred(env, deferred, error);
     if (err < 0) {
-      fprintf(stderr, "FATAL INTERNAL ERROR: Failed to resolve deferred\n");
+      fprintf(stderr, "FATAL INTERNAL ERROR: Failed to reject deferred\n");
       abort();
     }
   } else if (err < 0) {

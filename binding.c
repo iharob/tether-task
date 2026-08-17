@@ -15,7 +15,7 @@ bare_addon_tcp_cat(js_env_t *env, js_callback_info_t *info) {
 
   err = js_create_promise(env, &deferred, &promise);
   if (err < 0) {
-    js_throw_error(env, ERROR_CREATING_PROMISE, "Could not create promise for tcpCat");
+    js_throw_error(env, ERROR_CREATING_PROMISE, "Failed to create promise");
     return NULL;
   }
   tcp_cat_execute(env, info, deferred);

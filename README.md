@@ -1,6 +1,6 @@
-# bare-addon
+# tcp-cat-addon
 
-Template repository for creating Bare native addons. For information on how to use the template, see [Creating a repository from a template](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+This addon simply performs a TCP connection to a given IP and port and then sends specified text to it as bytes. It doesn't do anything else.
 
 ## Building
 

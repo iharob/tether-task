@@ -61,7 +61,7 @@ on_read(uv_stream_t *stream, const ssize_t nread, const uv_buf_t *buffer) {
 
   const int err = tcp_cat_uv_context_append_response(context, buffer->base, nread);
   if (err < 0) {
-    tcp_cat_context_set_pending_error(context, ERROR_NO_MEMORY, "Could not append response");
+    tcp_cat_context_set_pending_error(context, ERROR_NO_MEMORY, ERROR_MESSAGE_OUT_OF_MEMORY);
 
     uv_read_stop(stream);
     uv_close((uv_handle_t *) stream, on_close);
@@ -97,7 +97,7 @@ handle_connect_success(uv_connect_t *const connect_req, tcp_cat_uv_context *cons
 
   write = malloc(sizeof(*write));
   if (write == NULL) {
-    tcp_cat_context_set_pending_error(context, ERROR_NO_MEMORY, "Could not allocate the write handle");
+    tcp_cat_context_set_pending_error(context, ERROR_NO_MEMORY, ERROR_MESSAGE_OUT_OF_MEMORY);
     uv_close((uv_handle_t *) connect_req->handle, on_close);
 
     return;
@@ -146,13 +146,13 @@ tcp_cat_execute_async(uv_loop_t *const loop, const tcp_cat_arguments *const argu
   // structure.
   tcp_cat_uv_context *context = tcp_cat_uv_context_new(message, resolve, reject, data);
   if (context == NULL) {
-    reject(ERROR_NO_MEMORY, "Could not allocate memory: tcp_cat_context *", data);
+    reject(ERROR_NO_MEMORY, ERROR_MESSAGE_OUT_OF_MEMORY, data);
     return;
   }
 
   connect = malloc(sizeof(*connect));
   if (connect == NULL) {
-    reject(ERROR_NO_MEMORY, "Could not allocate memory: socket *", data);
+    reject(ERROR_NO_MEMORY, ERROR_MESSAGE_OUT_OF_MEMORY, data);
     tcp_cat_uv_context_free(context);
 
     return;
@@ -160,7 +160,7 @@ tcp_cat_execute_async(uv_loop_t *const loop, const tcp_cat_arguments *const argu
 
   socket = malloc(sizeof(*socket));
   if (socket == NULL) {
-    reject(ERROR_NO_MEMORY, "Could not allocate memory: socket *", data);
+    reject(ERROR_NO_MEMORY, ERROR_MESSAGE_OUT_OF_MEMORY, data);
     tcp_cat_uv_context_free(context);
 
     free(connect);
